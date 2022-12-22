@@ -1,0 +1,86 @@
+//write this code on move button click listener
+ IntentSender intentSender = moveFileDirect();
+                if (intentSender != null) {
+                    try {
+                        startIntentSenderForResult(intentSender, 786, null, 0, 0, 0);
+                    } catch (IntentSender.SendIntentException e) {
+                        e.printStackTrace();
+                    }
+                }
+
+
+//this method is returning intentSender it will be used in above lines where move click will be initialized
+ public IntentSender moveFileDirect() {
+        images.clear();
+        grantedUris.clear();
+        contentResolver = getContentResolver();
+//        List<Uri> images = new ArrayList<>();
+        IntentSender result = null;
+        PendingIntent pendingIntent = null;
+        File myDirectory = new File(Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOWNLOADS), ".jivanlal");
+        if (!myDirectory.exists()) {
+            myDirectory.mkdirs();
+        }
+        //TODO:- please enter here starting path from where you want to move your images
+        // it will take full folder images and move to given directory 
+        // Note: Please give testing folder for test purpose
+        File dirSrc = new File(Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_PICTURES), "Mytestingimages");
+//        File dirSrc = new File(Environment.getExternalStorageDirectory().getAbsolutePath(), "MIUI/Gallery/Testing App");
+        if (!dirSrc.isDirectory()) {
+            if (dirSrc.listFiles() == null) {
+                Toast.makeText(this, "No Images to move", Toast.LENGTH_SHORT).show();
+                return null;
+            }
+        }
+        File[] files = dirSrc.listFiles();
+        for (int i = 0; i < files.length; i++) {
+            images.add(getImageContentUri(Pager2Activity.this, files[i]));
+        }
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
+            pendingIntent = MediaStore.createWriteRequest(contentResolver, images);
+            result = pendingIntent.getIntentSender();
+        }
+
+//        val uris = images.filter {
+
+
+        return result;
+    }
+
+
+    @Override
+    protected void onActivityResult(int requestCode, int resultCode, @Nullable Intent data) {
+        super.onActivityResult(requestCode, resultCode, data);
+        if (requestCode == 786) {
+//            if (myFile.exists()) {
+//                Log.e(TAG, "onActivityResult: " + myFile.getAbsolutePath());
+//            }
+            for (int i = 0; i < images.size(); i++) {
+                if (checkUriPermission(images.get(i), Binder.getCallingPid(), Binder.getCallingUid(), Intent.FLAG_GRANT_WRITE_URI_PERMISSION) != PackageManager.PERMISSION_GRANTED) {
+                    grantedUris.add(images.get(i));
+                }
+            }
+
+//        }
+//            File destination = new File(Environment.getExternalStorageDirectory(), "MIUI/Gallery/Test1");
+//            File destination = new File(Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOWNLOADS), ".jivanlal");
+
+            //TODO:- please enter here destination path where you want to move your image
+            File destination = new File(Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DCIM).getAbsolutePath());
+            if (!destination.exists()) {
+                destination.mkdirs();
+            }
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+                ContentValues values = new ContentValues();
+                values.put(MediaStore.MediaColumns.RELATIVE_PATH, destination.getPath());
+
+                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
+                    for (Uri image : grantedUris) {
+                        contentResolver.update(image, values, null);
+                    }
+                }
+
+                Toast.makeText(this, "result code is " + resultCode + " ---- -1 ---- it means RESULT_OK", Toast.LENGTH_SHORT).show();
+            }
+        }
+    }
